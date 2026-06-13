@@ -1,0 +1,12 @@
+{
+    "model_version": "late_fusion_v2",
+    "checkpoint_file": "late_fusion_v2-epoch=10-val_acc=1.000.ckpt",
+    "training_status": "Completed",
+    "best_epoch": 10,
+    "metrics": {
+        "validation_accuracy": 1.000,
+        "fusion_strategy": "Late Fusion (Face 128D + Voice Mel-spectrogram)",
+        "hardware_target": "ESP32-CAM Edge Server"
+    },
+    "notes": "Phiên bản V2."
+}

@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+
+# Environment
+venv/
+.env
+
+# Models
+*.onnx.data
+
+# User specific
+calibration_set/
+auto_tuner.py
+database/
+PROJECT_PLAN.md
+
+# API keys and secrets
+firebase_credentials.json
+*firebase*.json

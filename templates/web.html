@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIoT Smart Lock — PTITHCM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-base:    #0d0f12;
+            --bg-panel:   #13161b;
+            --bg-card:    #1a1e25;
+            --bg-input:   #111418;
+            --border:     #252a33;
+            --border-hi:  #303845;
+            --text-pri:   #e8eaf0;
+            --text-sec:   #7a8394;
+            --text-dim:   #3f4755;
+            --accent:     #3d7eff;
+            --accent-dim: rgba(61,126,255,0.12);
+            --green:      #22c55e;
+            --green-dim:  rgba(34,197,94,0.12);
+            --red:        #ef4444;
+            --red-dim:    rgba(239,68,68,0.12);
+            --amber:      #f59e0b;
+            --amber-dim:  rgba(245,158,11,0.12);
+            --mono:       'IBM Plex Mono', monospace;
+            --sans:       'IBM Plex Sans', sans-serif;
+        }
+
+        body {
+            font-family: var(--sans);
+            background-color: var(--bg-base);
+            color: var(--text-pri);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            height: 52px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+        }
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .brand-name {
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            color: var(--text-sec);
+        }
+        .brand-name strong {
+            color: var(--text-pri);
+            font-weight: 500;
+        }
+        .topbar-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .meta-tag {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .meta-tag.live {
+            color: var(--green);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .live-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ── LAYOUT ── */
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 1fr;
+            height: calc(100vh - 52px);
+            gap: 0;
+        }
+
+        /* ── LEFT PANEL ── */
+        .sidebar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 16px;
+        }
+
+        .section-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* ── THRESHOLD CARD ── */
+        .thresh-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .thresh-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .thresh-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-sec);
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .thresh-icon {
+            width: 18px; height: 18px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        .thresh-icon.face  { background: rgba(61,126,255,0.15); color: var(--accent); }
+        .thresh-icon.voice { background: rgba(34,197,94,0.15);  color: var(--green);  }
+        .thresh-icon.fusion{ background: rgba(245,158,11,0.15); color: var(--amber);  }
+        .thresh-value {
+            font-family: var(--mono);
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-pri);
+            min-width: 36px;
+            text-align: right;
+        }
+        .thresh-track {
+            position: relative;
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 2px;
+            overflow: visible;
+        }
+        .thresh-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.1s ease;
+        }
+        .thresh-fill.face  { background: var(--accent); }
+        .thresh-fill.voice { background: var(--green);  }
+        .thresh-fill.fusion{ background: var(--amber);  }
+        input[type=range].thresh-slider {
+            position: absolute;
+            top: 50%; left: 0;
+            transform: translateY(-50%);
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            margin: 0;
+        }
+        input[type=range].thresh-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--text-pri);
+            border: 2px solid var(--bg-base);
+        }
+        input[type=range].thresh-slider::-moz-range-thumb {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--text-pri);
+            border: 2px solid var(--bg-base);
+        }
+        .thresh-bounds {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* ── STATUS BOX ── */
+        .status-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 110px;
+            transition: border-color 0.3s ease;
+        }
+        .status-card.ok   { border-color: rgba(34,197,94,0.4); }
+        .status-card.warn { border-color: rgba(245,158,11,0.4); }
+        .status-card.fail { border-color: rgba(239,68,68,0.4); }
+        .status-label {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .status-message {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-pri);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .status-message.ok   { color: var(--green); }
+        .status-message.warn { color: var(--amber); }
+        .status-message.fail { color: var(--red);   }
+        .status-timestamp {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* ── ENROLL BUTTON ── */
+        .enroll-btn {
+            width: 100%;
+            padding: 11px;
+            background: transparent;
+            border: 1px solid var(--border-hi);
+            border-radius: 7px;
+            color: var(--text-sec);
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+        .enroll-btn:hover:not(:disabled) {
+            background: var(--bg-card);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .enroll-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .enroll-btn .btn-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* ── MAIN AREA ── */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-base);
+            overflow: hidden;
+        }
+        .camera-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .camera-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .camera-label::before {
+            content: '';
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .camera-info {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .camera-frame {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        .camera-inner {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            aspect-ratio: 4/3;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .camera-inner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        /* Scanline overlay */
+        .camera-inner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.04) 2px,
+                rgba(0,0,0,0.04) 4px
+            );
+            pointer-events: none;
+        }
+        /* Corner brackets */
+        .corner {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: var(--accent);
+            border-style: solid;
+            border-width: 0;
+        }
+        .corner.tl { top: 8px; left: 8px;  border-top-width: 2px; border-left-width: 2px;  }
+        .corner.tr { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; }
+        .corner.bl { bottom: 8px; left: 8px;  border-bottom-width: 2px; border-left-width: 2px;  }
+        .corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+        .no-feed {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: var(--text-dim);
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+        .no-feed-icon { font-size: 28px; opacity: 0.3; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-brand">
+        <div class="brand-dot"></div>
+        <span class="brand-name"><strong>Multimodal AIoT</strong> &nbsp;/&nbsp; Smart Lock</span>
+    </div>
+    <div class="topbar-meta">
+        <span class="meta-tag">DPT — PTITHCM</span>
+        <span class="meta-tag live"><span class="live-dot"></span> Online</span>
+    </div>
+</header>
+
+<div class="workspace">
+    <aside class="sidebar">
+        <div class="section-label">Thresholds</div>
+
+        <div class="thresh-card">
+            <div class="thresh-header">
+                <span class="thresh-name">
+                    <span class="thresh-icon face">F</span>
+                    Face Identity
+                </span>
+                <span class="thresh-value" id="faceVal">{{ THRESHOLDS['IDENTITY_THRESHOLD'] }}</span>
+            </div>
+            <div class="thresh-track">
+                <div class="thresh-fill face" id="faceFill" style="width: calc(({{ THRESHOLDS['IDENTITY_THRESHOLD'] }} - 0.4) / 0.5 * 100%)"></div>
+                <input type="range" class="thresh-slider" id="faceThresh"
+                       min="0.4" max="0.9" step="0.05"
+                       value="{{ THRESHOLDS['IDENTITY_THRESHOLD'] }}"
+                       oninput="updateThresholds()">
+            </div>
+            <div class="thresh-bounds"><span>0.40</span><span>0.90</span></div>
+        </div>
+
+        <div class="thresh-card">
+            <div class="thresh-header">
+                <span class="thresh-name">
+                    <span class="thresh-icon voice">V</span>
+                    Voice Match
+                </span>
+                <span class="thresh-value" id="voiceVal">{{ THRESHOLDS['VOICE_MATCH_THRESHOLD'] }}</span>
+            </div>
+            <div class="thresh-track">
+                <div class="thresh-fill voice" id="voiceFill" style="width: calc(({{ THRESHOLDS['VOICE_MATCH_THRESHOLD'] }} - 0.5) / 0.49 * 100%)"></div>
+                <input type="range" class="thresh-slider" id="voiceThresh"
+                       min="0.5" max="0.99" step="0.01"
+                       value="{{ THRESHOLDS['VOICE_MATCH_THRESHOLD'] }}"
+                       oninput="updateThresholds()">
+            </div>
+            <div class="thresh-bounds"><span>0.50</span><span>0.99</span></div>
+        </div>
+
+        <div class="thresh-card">
+            <div class="thresh-header">
+                <span class="thresh-name">
+                    <span class="thresh-icon fusion">AI</span>
+                    AI Fusion Live
+                </span>
+                <span class="thresh-value" id="fusionVal">{{ THRESHOLDS['FUSION_THRESHOLD'] }}</span>
+            </div>
+            <div class="thresh-track">
+                <div class="thresh-fill fusion" id="fusionFill" style="width: calc(({{ THRESHOLDS['FUSION_THRESHOLD'] }} - 0.5) / 0.45 * 100%)"></div>
+                <input type="range" class="thresh-slider" id="fusionThresh"
+                       min="0.5" max="0.95" step="0.05"
+                       value="{{ THRESHOLDS['FUSION_THRESHOLD'] }}"
+                       oninput="updateThresholds()">
+            </div>
+            <div class="thresh-bounds"><span>0.50</span><span>0.95</span></div>
+        </div>
+
+        <div class="section-label" style="margin-top:4px">System Status</div>
+
+        <div class="status-card" id="statusCard">
+            <span class="status-label">Door Controller</span>
+            <span class="status-message" id="liveStatus">Đang kết nối...</span>
+            <span class="status-timestamp" id="statusTime">--:--:--</span>
+        </div>
+
+        <button class="enroll-btn" id="enrollBtn" onclick="startEnrollment()">
+            <span class="btn-dot"></span>
+            Enroll Biometrics
+        </button>
+    </aside>
+
+    <main class="main-area">
+        <div class="camera-header">
+            <span class="camera-label">Camera Feed — ESP32-CAM</span>
+            <span class="camera-info" id="camInfo">STREAM &nbsp;/&nbsp; MJPEG</span>
+        </div>
+        <div class="camera-frame">
+            <div class="camera-inner" id="camWrap">
+                <img src="/video_feed"
+                     id="camImg"
+                     alt="Camera feed"
+                     onerror="this.style.display='none'; document.getElementById('noFeed').style.display='flex';">
+                <div class="no-feed" id="noFeed" style="display:none;">
+                    <span class="no-feed-icon">&#9673;</span>
+                    <span>Đang chờ Camera...</span>
+                </div>
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+<script>
+    // ── SSE STATUS STREAM ──
+    const evtSource = new EventSource("/api/status_stream");
+    evtSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const msg  = data.message;
+        const col  = data.color;
+        const statusEl = document.getElementById("liveStatus");
+        const cardEl   = document.getElementById("statusCard");
+        const timeEl   = document.getElementById("statusTime");
+
+        statusEl.textContent = msg;
+        cardEl.className = "status-card";
+        statusEl.className = "status-message";
+
+        if (col === "#00ff00" || col === "#22c55e") {
+            cardEl.classList.add("ok");
+            statusEl.classList.add("ok");
+        } else if (col === "#ffff00" || col === "#f59e0b") {
+            cardEl.classList.add("warn");
+            statusEl.classList.add("warn");
+        } else if (col === "#ff0000" || col === "#ef4444") {
+            cardEl.classList.add("fail");
+            statusEl.classList.add("fail");
+        }
+
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString('vi-VN');
+    };
+
+    // ── ENROLL ──
+    async function startEnrollment() {
+        const btn = document.getElementById('enrollBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-dot" style="animation: pulse 0.8s ease-in-out infinite;"></span> Processing...';
+        try {
+            await fetch('/api/enroll_edge', { method: 'POST' });
+        } catch (err) {
+            alert("Lỗi kết nối tới ESP32!");
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-dot"></span> Enroll Biometrics';
+    }
+
+    // ── THRESHOLD UPDATE ──
+    async function updateThresholds() {
+        const fVal  = parseFloat(document.getElementById('faceThresh').value);
+        const vVal  = parseFloat(document.getElementById('voiceThresh').value);
+        const fuVal = parseFloat(document.getElementById('fusionThresh').value);
+
+        document.getElementById('faceVal').textContent  = fVal.toFixed(2);
+        document.getElementById('voiceVal').textContent = vVal.toFixed(2);
+        document.getElementById('fusionVal').textContent= fuVal.toFixed(2);
+
+        document.getElementById('faceFill').style.width  = ((fVal  - 0.4) / 0.5  * 100).toFixed(1) + '%';
+        document.getElementById('voiceFill').style.width = ((vVal  - 0.5) / 0.49 * 100).toFixed(1) + '%';
+        document.getElementById('fusionFill').style.width= ((fuVal - 0.5) / 0.45 * 100).toFixed(1) + '%';
+
+        await fetch('/api/update_thresholds', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                IDENTITY_THRESHOLD:   fVal,
+                VOICE_MATCH_THRESHOLD: vVal,
+                FUSION_THRESHOLD:     fuVal
+            })
+        });
+    }
+
+    // ── CLOCK TICK ──
+    setInterval(() => {
+        const el = document.getElementById("statusTime");
+        if (el.textContent === '--:--:--') {
+            el.textContent = new Date().toLocaleTimeString('vi-VN');
+        }
+    }, 1000);
+</script>
+</body>
+</html>

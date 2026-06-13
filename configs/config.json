@@ -1,0 +1,8 @@
+{
+    "KNOWN_FACE_DIR": "database/owner",
+    "VOICE_DIR": "database/voices",
+    "LATE_FUSION_CKPT": "late_fusion_V2.ckpt",
+    "ESP32_IP": "smartlock.local",
+    "SAMPLE_RATE": 16000,
+    "AUDIO_DURATION_SEC": 3.0
+}
