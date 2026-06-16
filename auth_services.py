@@ -112,12 +112,16 @@ class VoiceAuthService:
             # 2. Bộ lọc DSP (Loại bỏ tiếng ồn/huýt sáo/loa to)
             if not audio_has_enough_signal(y, "verify_voice", self.thresholds): 
                 return 0.0
+            
+            raw_peak = np.max(np.abs(y))
+            if raw_peak > 0:
+                y = y / raw_peak
                 
             peak = np.max(np.abs(y))
             rms = np.sqrt(np.mean(y**2))
             
-            if rms > 0.10: return 0.0 
-            if peak >= 0.99: return 0.0 
+            if rms > 0.85: return 0.0 #0.10
+            #if peak >= 0.99: return 0.0 
 
             # 3. Ép âm thanh từ ESP32 về đúng chuẩn 16000Hz để AI không bị "điếc"
             if self.config["SAMPLE_RATE"] != 16000:
